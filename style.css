@@ -93,4 +93,35 @@ label, select {
     width: 120px;
     max-width: none; /* Remove scaling limits for desktop */
   }
+  /* ------------------------------
+   Dictionary helper controls
+--------------------------------*/
+.helper {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  margin: 8px 0 16px;
+}
+
+.helper select,
+.helper button {
+  font-size: 1rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.helper button {
+  cursor: pointer;
+}
+
+.sr-only {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 }
