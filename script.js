@@ -1,4 +1,4 @@
-// === script.js (robust duplicate triangle + dictionary lookup) ===
+// === script.js (duplicate triangle + dictionary lookup) ===
 
 const sheetURL = 'https://raw.githubusercontent.com/RJ-Flashcards/Flashcard-app3/main/vocab.csv';
 
@@ -252,8 +252,8 @@ function buildDictUrl(dictKey, word) {
   return DICT_DIRECT[dictKey](clean);
 }
 
-// Initialize dropdown + button
-(function initDictionaryLookup() {
+// Initialize dropdown + button after DOM is ready
+document.addEventListener("DOMContentLoaded", () => {
   const helper = document.getElementById("dictHelper");
   const choice = document.getElementById("dictChoice");
   const btn = document.getElementById("lookupBtn");
@@ -266,7 +266,13 @@ function buildDictUrl(dictKey, word) {
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     const dictKey = choice.value;
-    const word = (window.currentWord || "").trim();
+
+    // Prefer window.currentWord; fall back to the flashcard array
+    let word = (window.currentWord || "").trim();
+    if (!word && Array.isArray(flashcards) && flashcards.length > 0) {
+      const card = flashcards[currentCard] || {};
+      word = (card.term || "").trim();
+    }
 
     if (!word) {
       alert("No word is selected yet.");
@@ -276,7 +282,7 @@ function buildDictUrl(dictKey, word) {
     const url = buildDictUrl(dictKey, word);
     window.open(url, "_blank", "noopener");
   });
-})();
+});
 
 // Go!
 fetchFlashcards();
