@@ -1,4 +1,4 @@
-// === script.js (robust duplicate triangle) ===
+// === script.js (robust duplicate triangle + dictionary lookup) ===
 
 const sheetURL = 'https://raw.githubusercontent.com/RJ-Flashcards/Flashcard-app3/main/vocab.csv';
 
@@ -161,6 +161,9 @@ function displayCard() {
   const flashcardEl = document.getElementById('flashcard');
   if (isFlipped) flashcardEl.classList.add('flipped');
   else flashcardEl.classList.remove('flipped');
+
+  // 👇 expose current word for dictionary lookup
+  window.currentWord = card.term || '';
 }
 
 /* ---------------------------
@@ -189,6 +192,91 @@ document.getElementById('back-btn')?.addEventListener('click', (e) => {
   currentCard = (currentCard - 1 + flashcards.length) % flashcards.length;
   displayCard();
 });
+
+/* ---------------------------
+   Dictionary lookup feature
+---------------------------- */
+// Direct-entry URL templates
+const DICT_DIRECT = {
+  cambridge: (w) =>
+    `https://dictionary.cambridge.org/dictionary/learner-english/${encodeURIComponent(
+      w.replace(/\s+/g, "-").toLowerCase()
+    )}`,
+  oxford: (w) =>
+    `https://www.oxfordlearnersdictionaries.com/definition/english/${encodeURIComponent(
+      w.replace(/\s+/g, "-").toLowerCase()
+    )}`,
+  longman: (w) =>
+    `https://www.ldoceonline.com/dictionary/${encodeURIComponent(
+      w.replace(/\s+/g, "-").toLowerCase()
+    )}`,
+};
+
+// Search fallback URLs
+const DICT_SEARCH = {
+  cambridge: (w) =>
+    `https://www.google.com/search?q=${encodeURIComponent(
+      `site:dictionary.cambridge.org "${w}"`
+    )}`,
+  oxford: (w) =>
+    `https://www.google.com/search?q=${encodeURIComponent(
+      `site:oxfordlearnersdictionaries.com "${w}"`
+    )}`,
+  longman: (w) =>
+    `https://www.google.com/search?q=${encodeURIComponent(
+      `site:ldoceonline.com "${w}"`
+    )}`,
+};
+
+// Heuristic: detect phrases / inflections
+function shouldUseSearch(word) {
+  if (!word) return true;
+  const w = word.trim();
+
+  if (/\s/.test(w)) return true; // multi-word
+  if (/[^\p{L}\p{M}-]/u.test(w)) return true; // punctuation
+
+  const lw = w.toLowerCase();
+  if (/(ing|ed|ies|ied|ers|est|s)$/.test(lw) && !/(ss|us|is|as)s$/.test(lw)) {
+    return true;
+  }
+
+  return false;
+}
+
+function buildDictUrl(dictKey, word) {
+  const clean = (word || "").trim();
+  if (shouldUseSearch(clean)) {
+    return DICT_SEARCH[dictKey](clean);
+  }
+  return DICT_DIRECT[dictKey](clean);
+}
+
+// Initialize dropdown + button
+(function initDictionaryLookup() {
+  const helper = document.getElementById("dictHelper");
+  const choice = document.getElementById("dictChoice");
+  const btn = document.getElementById("lookupBtn");
+
+  if (!helper || !choice || !btn) return;
+
+  helper.addEventListener("click", (e) => e.stopPropagation());
+  helper.addEventListener("touchstart", (e) => e.stopPropagation(), { passive: true });
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const dictKey = choice.value;
+    const word = (window.currentWord || "").trim();
+
+    if (!word) {
+      alert("No word is selected yet.");
+      return;
+    }
+
+    const url = buildDictUrl(dictKey, word);
+    window.open(url, "_blank", "noopener");
+  });
+})();
 
 // Go!
 fetchFlashcards();
